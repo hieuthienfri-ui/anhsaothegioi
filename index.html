@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đại Đế Chí Tôn - Thiên Giới Final</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --n-blue: #00f3ff; --n-green: #39ff14; --n-pink: #ff00ff; --n-gold: #fff200; --bg: #000; }
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: sans-serif; color: white; touch-action: none; }
+        canvas { position: fixed; inset: 0; display: block; }
+        #starCanvas { z-index: 1; }
+        #gameCanvas { z-index: 5; display: none; }
+
+        /* UI GIAO DIỆN */
+        #ui-wrapper { position: absolute; inset: 0; z-index: 10; display: flex; flex-direction: column; pointer-events: none; }
+        #ui-wrapper * { pointer-events: auto; }
+        
+        #top-bar { position: absolute; top: 15px; left: 10px; right: 10px; display: flex; justify-content: space-between; }
+        .stats-group { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.8); padding: 5px 12px; border-radius: 12px; border: 2px solid var(--n-blue); font-weight: bold; box-shadow: 0 0 10px var(--n-blue); }
+        
+        #menu-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #rank-name { font-size: 55px; font-weight: 900; color: var(--n-pink); text-shadow: 0 0 25px var(--n-pink); margin: 0; letter-spacing: 2px; }
+        .btn-main { padding: 18px 60px; border-radius: 50px; background: #000; border: 4px solid var(--n-green); color: var(--n-green); font-weight: 900; font-size: 24px; cursor: pointer; margin-top: 25px; box-shadow: 0 0 20px var(--n-green); transition: 0.3s; text-shadow: 0 0 10px var(--n-green); }
+
+        #bottom-bar { position: absolute; bottom: 25px; width: 100%; display: flex; gap: 10px; justify-content: center; padding: 0 15px; box-sizing: border-box; }
+        .btn-nav { flex: 1; padding: 14px 0; border-radius: 15px; background: #111; border: 2px solid var(--n-blue); color: var(--n-blue); font-weight: bold; text-align: center; cursor: pointer; font-size: 13px; text-transform: uppercase; box-shadow: 0 0 5px var(--n-blue); }
+
+        /* MODAL THÔNG BÁO ĐẸP */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 1000; display: none; align-items: center; justify-content: center; pointer-events: auto; }
+        .modal-box { width: 85%; max-width: 320px; background: #000; border: 4px solid var(--n-pink); border-radius: 30px; padding: 25px; text-align: center; box-shadow: 0 0 40px var(--n-pink); animation: pop 0.3s ease; }
+        @keyframes pop { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
+        .modal-title { font-size: 26px; font-weight: 900; color: var(--n-pink); margin-bottom: 15px; text-transform: uppercase; text-shadow: 0 0 10px var(--n-pink); }
+        .modal-content { font-size: 16px; margin-bottom: 25px; color: #fff; line-height: 1.6; font-weight: bold; }
+        .btn-confirm { width: 100%; padding: 14px; background: #000; border: 2px solid var(--n-blue); color: var(--n-blue); border-radius: 15px; font-weight: 900; font-size: 17px; cursor: pointer; }
+        
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #333; font-size: 14px; text-align: left; }
+        .btn-buy { background: var(--n-green); color: #000; border: none; padding: 6px 12px; border-radius: 8px; font-weight: 900; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <canvas id="starCanvas"></canvas>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-wrapper">
+        <div id="top-bar">
+            <div style="display:flex; gap:5px;">
+                <div class="stats-group">🦋 <span id="ll-val">500</span></div>
+                <div class="stats-group" style="border-color:var(--n-pink); color:var(--n-pink);">👤 Đại Đế</div>
+            </div>
+            <div class="stats-group" style="border-color:var(--n-gold); color:var(--n-gold);">🏆 <span id="high-val">0</span></div>
+        </div>
+        <div id="menu-center">
+            <h1 id="rank-name">ĐỒNG</h1>
+            <p id="exp-info" style="color:var(--n-gold); font-weight:bold; font-size: 18px;">TÍCH LŨY: 0 / 50</p>
+            <button class="btn-main" onclick="playClick(); startGame()">XUẤT THẾ</button>
+        </div>
+        <div id="bottom-bar">
+            <div class="btn-nav" onclick="playClick(); openPanel('shop')">SHOP</div>
+            <div class="btn-nav" onclick="playClick(); openPanel('history')">LỊCH SỬ</div>
+            <div class="btn-nav" onclick="playClick(); receiveGift()" style="background:var(--n-gold); color:#000; border:none; box-shadow: 0 0 10px var(--n-gold);">THƯỞNG</div>
+            <div class="btn-nav" id="music-toggle" onclick="playClick(); toggleSystemAudio()" style="background:var(--n-blue); color:#000; border:none;">NHẠC: TẮT</div>
+        </div>
+    </div>
+
+    <div id="custom-alert" class="modal">
+        <div class="modal-box" id="alert-box">
+            <div class="modal-title" id="alert-title">THÔNG BÁO</div>
+            <div class="modal-content" id="alert-content"></div>
+            <button class="btn-confirm" onclick="playClick(); closeAlert()">XÁC NHẬN</button>
+        </div>
+    </div>
+
+<script>
+    // --- CẤU HÌNH FIREBASE ĐỂ KẾT NỐI VỚI ADMIN ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBzA4mRLIxG1b0e091-NL3UbrY9TstD3_Y",
+        databaseURL: "https://trangchuatmin-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "trangchuatmin",
+        appId: "1:433643953060:web:fb58275365a3d70233630d"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let data = JSON.parse(localStorage.getItem('thien_de_final_v2')) || { 
+        ll: 500, highScore: 0, exp: 0, lastGift: 0, history: [] 
+    };
+
+    const sounds = {
+        home: new Audio('Giữa trời đêm đầy sao.mp3'),
+        shop: new Audio('nhacshop36.mp3'),
+        history: new Audio('lichsu5.mp3'),
+        play: new Audio('nhactrochoi.mp3'),
+        lose: new Audio('thua895.mp3'),
+        jump: new Audio('nhay577.mp3'),
+        reward: new Audio('nhanthuong639.mp3'),
+        click: new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3')
+    };
+    let isAudioActive = false;
+
+    function playClick() { sounds.click.currentTime = 0; sounds.click.play().catch(()=>{}); }
+
+    function toggleSystemAudio() {
+        isAudioActive = !isAudioActive;
+        document.getElementById('music-toggle').innerText = isAudioActive ? "NHẠC: BẬT" : "NHẠC: TẮT";
+        document.getElementById('music-toggle').style.background = isAudioActive ? 'var(--n-green)' : 'var(--n-blue)';
+        if(isAudioActive) playS('home', true);
+        else Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; });
+    }
+
+    function playS(key, loop = false) {
+        if (!isAudioActive) return;
+        Object.keys(sounds).forEach(k => { if(k!=='jump' && k!=='click') { sounds[k].pause(); sounds[k].currentTime = 0; } });
+        sounds[key].loop = loop;
+        sounds[key].play().catch(() => {});
+    }
+
+    function save() { localStorage.setItem('thien_de_final_v2', JSON.stringify(data)); }
+
+    function updateUI() {
+        document.getElementById('ll-val').innerText = data.ll;
+        document.getElementById('high-val').innerText = data.highScore;
+        const RANKS = [{n:"ĐỒNG", e:50}, {n:"BẠC", e:100}, {n:"VÀNG", e:200}, {n:"ĐẠI ĐẾ", e:4000}];
+        let r = RANKS[0];
+        for(let x of RANKS) if(data.exp >= x.e) r = x;
+        document.getElementById('rank-name').innerText = r.n;
+        document.getElementById('exp-info').innerText = `TÍCH LŨY: ${data.exp} / ${r.e}`;
+    }
+
+    function showAlert(title, content, color = 'var(--n-pink)') {
+        document.getElementById('alert-title').innerText = title;
+        document.getElementById('alert-title').style.color = color;
+        document.getElementById('alert-content').innerHTML = content;
+        document.getElementById('alert-box').style.borderColor = color;
+        document.getElementById('custom-alert').style.display = 'flex';
+    }
+
+    function closeAlert() {
+        document.getElementById('custom-alert').style.display = 'none';
+        if(!playing) playS('home', true);
+    }
+
+    function receiveGift() {
+        let now = Date.now();
+        if (now - data.lastGift >= 86400000) {
+            data.ll += 100; data.lastGift = now;
+            addHistory("Nhận thưởng 100 LL");
+            save(); updateUI(); playS('reward');
+            showAlert("THÀNH CÔNG", "Nhận 100 Linh Lượng!", "var(--n-gold)");
+        } else {
+            showAlert("CẢNH BÁO", "Chưa đến giờ nhận thưởng!", "var(--n-pink)");
+        }
+    }
+
+    function openPanel(type) {
+        playS(type, true);
+        if (type === 'shop') {
+            let html = `
+                <div class="list-item"><span>🌟 Đan Hồi Sinh</span> <b>50 LL</b> <button class="btn-buy" onclick="buy(50, 'Đan Hồi Sinh')">MUA</button></div>
+                <div class="list-item"><span>🚀 Phi Kiếm</span> <b>100 LL</b> <button class="btn-buy" onclick="buy(100, 'Phi Kiếm')">MUA</button></div>
+            `;
+            showAlert("THIÊN SHOP", html, "var(--n-gold)");
+        } else {
+            let hHTML = data.history.length === 0 ? "Chưa có ký sử." : "";
+            data.history.slice().reverse().forEach(h => {
+                hHTML += `<div class="list-item"><span>${h.time}</span> <b>${h.msg || '+'+h.pts}</b></div>`;
+            });
+            showAlert("LỊCH SỬ", `<div style="max-height:200px; overflow-y:auto">${hHTML}</div>`, "var(--n-blue)");
+        }
+    }
+
+    function buy(cost, name) {
+        if(data.ll >= cost) { 
+            data.ll -= cost; addHistory("Mua " + name); 
+            save(); updateUI(); showAlert("THÀNH CÔNG", "Đã mua " + name, "var(--n-green)"); 
+        } else showAlert("THẤT BẠI", "Không đủ LL!", "var(--n-pink)");
+    }
+
+    function addHistory(msg, pts = null) {
+        let now = new Date().toLocaleTimeString('vi-VN');
+        data.history.push({time: now, msg: msg, pts: pts});
+        if(data.history.length > 20) data.history.shift();
+    }
+
+    // GAME ENGINE
+    const gCan = document.getElementById('gameCanvas'), gCtx = gCan.getContext('2d');
+    let playing = false, score = 0, p = {x:80, y:0, dy:0, s:35}, plats = [], camX = 0, trail = [];
+
+    function startGame() {
+        if(data.ll < 10) return showAlert("CẢNH BÁO", "Cần 10 LL!", "var(--n-pink)");
+        data.ll -= 10; updateUI(); save();
+        if(!isAudioActive) toggleSystemAudio();
+        playS('play', true);
+        document.getElementById('ui-wrapper').style.display = 'none';
+        gCan.style.display = 'block';
+        playing = true; camX = 0; score = 0; p.y = 100; p.dy = 0; trail = [];
+        gCan.width = window.innerWidth; gCan.height = window.innerHeight;
+        plats = [{x:0, y:gCan.height-130, w:gCan.width, sc:true}];
+        for(let i=0; i<10; i++) spawnPlat();
+        gameLoop();
+    }
+
+    function spawnPlat() {
+        let last = plats[plats.length-1];
+        plats.push({x: last.x + last.w + 130 + Math.random()*60, y: gCan.height-130-Math.random()*90, w: 200+Math.random()*100, sc:false});
+    }
+
+    function gameLoop() {
+        if(!playing) return;
+        gCtx.clearRect(0,0,gCan.width, gCan.height);
+        camX += 7; p.dy += 1.4; 
+        let nextY = p.y + p.dy;
+        let onGround = false;
+
+        gCtx.save(); gCtx.translate(-camX, 0);
+        
+        plats.forEach(pl => {
+            gCtx.fillStyle = '#39ff14'; gCtx.fillRect(pl.x, pl.y, pl.w, 35);
+            if(p.dy >= 0 && (p.x+camX+p.s > pl.x) && (p.x+camX < pl.x+pl.w)) {
+                if(p.y+p.s <= pl.y && nextY+p.s >= pl.y) {
+                    p.y = pl.y - p.s; p.dy = 0; onGround = true;
+                    if(!pl.sc) { pl.sc = true; score += 10; data.exp += 2; updateUI(); }
+                }
+            }
+        });
+        if(!onGround) p.y = nextY;
+
+        trail.push({x: p.x + camX, y: p.y, h: (Date.now()/5)%360});
+        if(trail.length > 15) trail.shift();
+        trail.forEach((t, i) => {
+            gCtx.globalAlpha = i / trail.length * 0.5;
+            gCtx.fillStyle = `hsl(${t.h}, 100%, 50%)`;
+            gCtx.fillRect(t.x, t.y, p.s, p.s);
+        });
+
+        gCtx.globalAlpha = 1;
+        gCtx.shadowBlur = 15; gCtx.shadowColor = "#fff";
+        gCtx.fillStyle = "white";
+        gCtx.fillRect(p.x+camX, p.y, p.s, p.s);
+        gCtx.restore();
+
+        if(plats[0].x+plats[0].w < camX) { plats.shift(); spawnPlat(); }
+        if(p.y > gCan.height) {
+            playing = false; playS('lose');
+            addHistory("Thất bại", score);
+            if(score > data.highScore) data.highScore = score;
+            save(); updateUI();
+            showAlert("KẾT THÚC", `Điểm: ${score}`, "var(--n-pink)");
+            gCan.style.display = 'none'; document.getElementById('ui-wrapper').style.display = 'flex';
+        } else requestAnimationFrame(gameLoop);
+    }
+
+    window.onpointerdown = () => { if(playing && p.dy === 0) { p.dy = -28; if(isAudioActive) sounds.jump.play(); } };
+
+    const sCan = document.getElementById('starCanvas'), sCtx = sCan.getContext('2d');
+    let stars = [];
+    function initStars() {
+        sCan.width = window.innerWidth; sCan.height = window.innerHeight;
+        const colors = ['#00f3ff', '#ff00ff', '#39ff14', '#fff200', '#ffffff'];
+        for(let i=0; i<1800; i++) {
+            stars.push({
+                x: Math.random()*sCan.width, y: Math.random()*sCan.height,
+                s: Math.random()*3 + 1,
+                v: Math.random()*0.5 + 0.1,
+                c: colors[Math.floor(Math.random()*colors.length)]
+            });
+        }
+    }
+    function drawStars() {
+        sCtx.fillStyle = '#000'; sCtx.fillRect(0,0,sCan.width, sCan.height);
+        stars.forEach(s => {
+            sCtx.fillStyle = s.c;
+            sCtx.fillRect(s.x, s.y, s.s, s.s);
+            s.y += s.v; if(s.y > sCan.height) s.y = -5;
+        });
+        requestAnimationFrame(drawStars);
+    }
+
+    // --- ĐOẠN CODE LẮNG NGHE LỆNH TỪ ADMIN ĐÃ ĐƯỢC ĐƯA VÀO TRONG THẺ SCRIPT ---
+    const adminRef = db.ref('admin');
+    adminRef.child('notice').on('value', (snapshot) => {
+        const dataNotice = snapshot.val();
+        if (dataNotice && dataNotice.text) {
+            showAlert("THIÊN LỆNH", dataNotice.text, "var(--n-pink)");
+        }
+    });
+    adminRef.child('gift').on('value', (snapshot) => {
+        const dataGift = snapshot.val();
+        if (dataGift && dataGift.amount) {
+            data.ll += parseInt(dataGift.amount);
+            updateUI(); save();
+            showAlert("THIÊN THƯỞNG", "Bạn vừa được Đại Đế ban tặng " + dataGift.amount + " Linh Lượng!", "var(--n-gold)");
+        }
+    });
+
+    initStars(); drawStars(); updateUI();
+</script>
+</body>
+</html>
