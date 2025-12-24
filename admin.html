@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Lăng Tiêu Bảo Điện - Admin</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { background: #000; color: #39ff14; font-family: monospace; padding: 20px; text-align: center; }
+        .panel { border: 2px solid #39ff14; padding: 20px; border-radius: 15px; max-width: 500px; margin: 20px auto; box-shadow: 0 0 20px #39ff14; }
+        input, select { width: 90%; padding: 12px; margin: 10px 0; background: #111; border: 1px solid #39ff14; color: #fff; border-radius: 5px; }
+        button { background: #39ff14; color: #000; padding: 15px; border: none; font-weight: bold; cursor: pointer; width: 95%; margin-top: 10px; }
+        .log-box { height: 200px; overflow-y: auto; background: #111; border: 1px solid #333; padding: 10px; text-align: left; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🏯 LĂNG TIÊU BẢO ĐIỆN</h1>
+    
+    <div class="panel">
+        <h3>🎁 KHO THIÊN MÃ (CODE SỰ KIỆN)</h3>
+        <input type="text" id="c_name" placeholder="Tên Code...">
+        <input type="number" id="c_prize" placeholder="Linh Lượng tặng...">
+        <input type="number" id="c_time" placeholder="Đếm ngược (giây)...">
+        <select id="c_auto">
+            <option value="true">Tự động tặng cho tất cả Online</option>
+            <option value="false">Phải nhập tay</option>
+        </select>
+        <button onclick="createEvent()">PHÁT LỆNH SỰ KIỆN</button>
+    </div>
+
+    <div class="panel">
+        <h3>📜 NHẬT KÝ HÀNH ĐỘNG</h3>
+        <div id="logBox" class="log-box"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBzA4mRLIxG1b0e091-NL3UbrY9TstD3_Y",
+            databaseURL: "https://trangchuatmin-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "trangchuatmin",
+            appId: "1:433643953060:web:fb58275365a3d70233630d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function createEvent() {
+            const name = document.getElementById('c_name').value;
+            const prize = document.getElementById('c_prize').value;
+            const time = document.getElementById('c_time').value;
+            const auto = document.getElementById('c_auto').value === "true";
+
+            db.ref('admin/event_code').set({
+                code: name, prize: prize, seconds: time, auto: auto, active: true, ts: Date.now()
+            }).then(() => {
+                const log = `[${new Date().toLocaleTimeString()}] Đã phát mã ${name} (+${prize}LL)`;
+                db.ref('admin/logs').push(log);
+                alert("Lệnh đã phát thành công!");
+            });
+        }
+
+        db.ref('admin/logs').limitToLast(10).on('child_added', (snap) => {
+            document.getElementById('logBox').innerHTML = `<div>${snap.val()}</div>` + document.getElementById('logBox').innerHTML;
+        });
+    </script>
+</body>
+</html>
