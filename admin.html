@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lăng Tiêu Bảo Điện - Quản Trị Tối Cao</title>
+    <style>
+        body { background-color: #000; color: #0f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
+        .box { border: 2px solid #0f0; padding: 30px; border-radius: 15px; box-shadow: 0 0 20px #0f0; background: rgba(0,20,0,0.9); width: 90%; max-width: 400px; text-align: center; }
+        .hidden { display: none; }
+        button { background: #0f0; color: #000; border: none; padding: 12px 20px; margin: 10px; cursor: pointer; font-weight: bold; border-radius: 5px; width: 100%; transition: 0.3s; }
+        button:hover { box-shadow: 0 0 15px #0f0; }
+        input { width: 90%; padding: 10px; margin-bottom: 15px; background: #111; border: 1px solid #0f0; color: #0f0; text-align: center; }
+        .atmin-panel { width: 95%; max-width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+        .card { border: 1px solid #0f0; padding: 15px; background: #050505; box-shadow: 0 0 10px #0f0; border-radius: 10px; }
+        h2 { font-size: 1.2rem; color: #fff; text-shadow: 0 0 5px #0f0; }
+        .red-alert { border-color: #f00 !important; box-shadow: 0 0 10px #f00 !important; }
+        .red-alert button { background: #f00 !important; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div id="security-system">
+    <div id="m1" class="box">
+        <h2>🏯 MÀNG 1: XÁC MINH CÔNG TY</h2>
+        <p>Công ty của idol của Atmingame là?</p>
+        <button onclick="nextM(1,'C')">A. Dream Idol</button>
+        <button onclick="nextM(1,'C')">B. Star Idol</button>
+        <button onclick="checkM(1,'C')">C. TF family</button>
+        <button onclick="nextM(1,'C')">D. Royal Family</button>
+    </div>
+
+    <div id="m2" class="box hidden">
+        <h2>⏳ MÀNG 2: THẾ HỆ IDOL</h2>
+        <p>Idol Atmingame đang ở thế hệ nào?</p>
+        <button onclick="nextM(2,'B')">A. Thế hệ 1</button>
+        <button onclick="checkM(2,'B')">B. Thế hệ 4</button>
+        <button onclick="nextM(2,'B')">C. Thế hệ 3</button>
+        <button onclick="nextM(2,'B')">D. Thế hệ 2</button>
+    </div>
+
+    <div id="m3" class="box hidden">
+        <h2>🎤 MÀNG 3: DANH TÍNH IDOL</h2>
+        <p>Tên Idol của Atmingame là?</p>
+        <button onclick="nextM(3,'D')">A. Trần Tuấn Minh</button>
+        <button onclick="nextM(3,'D')">B. Dương Hàm Bác</button>
+        <button onclick="nextM(3,'D')">C. Dương Quế Nguyên</button>
+        <button onclick="checkM(3,'D')">D. Trần Dịch Hằng</button>
+    </div>
+
+    <div id="m4" class="box hidden">
+        <h2>🔑 MÀNG 4: MÃ XÁC MINH</h2>
+        <p>Nhập mã xác minh Atmingame (không hoa, không cách, không số):</p>
+        <input type="text" id="final-code" placeholder="Nhập mã tại đây...">
+        <button onclick="verifyAtmin()">XÁC NHẬN TRUY CẬP</button>
+    </div>
+</div>
+
+<div id="atmin-panel" class="atmin-panel hidden">
+    
+    <div class="card">
+        <h2>📢 THÔNG BÁO & KHO THIÊN MÃ</h2>
+        <input type="text" id="tb-text" placeholder="Nội dung thông báo toàn seve...">
+        <button onclick="sendLệnh('Thông báo toàn seve thành công!')">PHÁT LỆNH THÔNG BÁO</button>
+    </div>
+
+    <div class="card">
+        <h2>✨ ĐỔI MÀU SAO (TOÀN SEVE)</h2>
+        <input type="color" id="color-star" style="height: 50px;">
+        <button onclick="sendLệnh('Đã đổi màu sao toàn seve!')">ÁP DỤNG MÀU SAO</button>
+    </div>
+
+    <div class="card">
+        <h2>💎 TĂNG LINH LƯỢNG</h2>
+        <input type="text" id="id-target" placeholder="Nhập ID (bỏ trống nếu toàn seve)">
+        <input type="number" id="ll-amount" placeholder="Số lượng Linh Lượng">
+        <button onclick="sendLệnh('Đã cộng Linh Lượng thành công!')">XÁC NHẬN TĂNG</button>
+    </div>
+
+    <div class="card">
+        <h2>🔍 KIỂM TRA NGƯỜI CHƠI</h2>
+        <input type="text" id="check-id" placeholder="Nhập ID cần soi...">
+        <button onclick="sendLệnh('Thông tin ID: Đang hoạt động - Sạch')">KIỂM TRA NGAY</button>
+    </div>
+
+    <div class="card red-alert" style="grid-column: span 2;">
+        <h2>🚫 HỆ THỐNG TRỪNG PHẠT (APP THỨ 3)</h2>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="sendLệnh('Đã thu hồi Linh Lượng bẩn!')">KHÔI PHỤC LL SẠCH</button>
+            <button onclick="sendLệnh('Đã KHÓA tài khoản vi phạm!')">KHÓA ACC</button>
+            <button onclick="sendLệnh('Đã XÓA vĩnh viễn dữ liệu vi phạm!')">XÓA ACC</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function checkM(m, ans) {
+        document.getElementById('m'+m).classList.add('hidden');
+        document.getElementById('m'+(m+1)).classList.remove('hidden');
+    }
+
+    function nextM(m, ans) {
+        alert("Sai rồi! Bạn không phải Atmin.");
+        location.reload();
+    }
+
+    function verifyAtmin() {
+        let code = document.getElementById('final-code').value;
+        if(code === "tg lacyh") { // mã tg là cyh không cách không hoa
+            alert("Chào mừng Đại Đế trở về Lăng Tiêu Bảo Điện!");
+            document.getElementById('security-system').classList.add('hidden');
+            document.getElementById('atmin-panel').classList.remove('hidden');
+            document.body.style.alignItems = "flex-start";
+        } else {
+            alert("Mã xác minh sai!");
+        }
+    }
+
+    function sendLệnh(msg) {
+        alert("⚡ LỆNH ĐẠI ĐẾ: " + msg);
+    }
+</script>
+</body>
+</html>
