@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đại Đế Chí Tôn - Thiên Giới</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --n-blue: #00f3ff; --n-green: #39ff14; --n-pink: #ff00ff; --n-gold: #fff200; --n-red: #ff3131; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; }
+        canvas { position: fixed; inset: 0; display: block; }
+        #starCanvas { z-index: 1; }
+        #gameCanvas { z-index: 5; display: none; }
+
+        /* UI WRAPPER */
+        #ui-wrapper { position: absolute; inset: 0; z-index: 10; display: none; flex-direction: column; pointer-events: none; }
+        #ui-wrapper * { pointer-events: auto; }
+        
+        /* TOP BAR */
+        #top-bar { position: absolute; top: 20px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .info-box { background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 15px; border: 2px solid var(--n-blue); box-shadow: 0 0 10px var(--n-blue); }
+        .id-text { color: var(--n-pink); font-size: 12px; font-weight: bold; text-shadow: 0 0 5px var(--n-pink); margin-top: 5px; }
+        
+        /* NÚT NHẠC LOA NEON */
+        #music-toggle { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; border: 3px solid var(--n-red); color: var(--n-red); box-shadow: 0 0 15px var(--n-red); background: #000; transition: 0.3s; }
+        #music-toggle.on { border-color: var(--n-green); color: var(--n-green); box-shadow: 0 0 15px var(--n-green); }
+
+        /* CENTER MENU */
+        #menu-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #rank-name { font-size: 60px; font-weight: 900; color: var(--n-pink); text-shadow: 0 0 30px var(--n-pink); margin: 0; }
+        .btn-start { padding: 20px 60px; border-radius: 50px; background: #000; border: 4px solid var(--n-green); color: var(--n-green); font-weight: 900; font-size: 26px; cursor: pointer; margin-top: 30px; box-shadow: 0 0 20px var(--n-green); }
+
+        /* BOTTOM BAR LỚN HƠN */
+        #bottom-bar { position: absolute; bottom: 30px; width: 100%; display: flex; gap: 15px; justify-content: center; padding: 0 20px; box-sizing: border-box; }
+        .btn-large { flex: 1; height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 20px; background: #000; border: 3px solid var(--n-blue); color: var(--n-blue); font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 0 10px var(--n-blue); text-transform: uppercase; }
+
+        /* MODAL */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .modal-box { width: 85%; max-width: 350px; background: #000; border: 3px solid var(--n-pink); border-radius: 30px; padding: 25px; text-align: center; box-shadow: 0 0 40px var(--n-pink); }
+        .btn-close { width: 100%; padding: 15px; background: var(--n-blue); color: #000; border: none; border-radius: 15px; font-weight: 900; font-size: 18px; margin-top: 20px; }
+
+        #login-screen { position: fixed; inset: 0; z-index: 4000; background: #000; display: flex; align-items: center; justify-content: center; }
+        .login-box { width: 80%; max-width: 320px; padding: 30px; border: 3px solid var(--n-blue); border-radius: 25px; text-align: center; }
+        .login-box input { width: 100%; padding: 15px; margin: 15px 0; background: #111; border: 1px solid #333; color: #fff; border-radius: 10px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div id="login-screen">
+        <div class="login-box">
+            <h1 style="color:var(--n-blue); margin:0">THIÊN GIỚI</h1>
+            <input type="text" id="reg-user" placeholder="Nhập tên Đại Đế...">
+            <button class="btn-large" style="width:100%" onclick="doLogin()">XÁC NHẬN</button>
+        </div>
+    </div>
+
+    <div id="msg-modal" class="modal">
+        <div class="modal-box">
+            <h2 id="msg-title" style="margin-top:0"></h2>
+            <div id="msg-body" style="font-size: 16px; line-height: 1.6;"></div>
+            <button class="btn-close" onclick="closeMsg()">XÁC NHẬN</button>
+        </div>
+    </div>
+
+    <canvas id="starCanvas"></canvas>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-wrapper">
+        <div id="top-bar">
+            <div class="info-box">
+                <div style="font-weight:900; font-size:20px; color:var(--n-gold)">🦋 <span id="ll-val">500</span></div>
+                <div id="id-display" class="id-text">ID: 000000</div>
+            </div>
+            <div id="music-toggle" onclick="toggleMusic()">🔊</div>
+        </div>
+
+        <div id="menu-center">
+            <h1 id="rank-name">ĐỒNG</h1>
+            <button class="btn-start" onclick="startGame()">XUẤT THẾ</button>
+        </div>
+
+        <div id="bottom-bar">
+            <div class="btn-large" onclick="openShop()">SHOP</div>
+            <div class="btn-large" onclick="openHistory()">LỊCH SỬ</div>
+            <div class="btn-large" onclick="claimGift()" style="border-color:var(--n-gold); color:var(--n-gold)">QUÀ TẶNG</div>
+        </div>
+    </div>
+
+<script>
+    let bgm = new Audio();
+    let musicOn = false;
+    const songs = {
+        home: 'Giữa trời đêm đầy sao.mp3',
+        shop: 'nhacshop36.mp3',
+        history: 'lichsu5.mp3',
+        play: 'nhactrochoi.mp3',
+        lose: 'thua895.mp3',
+        reward: 'nhanthuong639.mp3'
+    };
+
+    function playBGM(type) {
+        bgm.pause(); bgm.src = ""; bgm.load();
+        if (!musicOn || !songs[type]) return;
+        bgm.src = songs[type];
+        bgm.loop = (type !== 'lose' && type !== 'reward');
+        bgm.play().catch(()=>{});
+    }
+
+    function toggleMusic() {
+        musicOn = !musicOn;
+        const btn = document.getElementById('music-toggle');
+        if (musicOn) {
+            btn.classList.add('on');
+            playBGM('home');
+        } else {
+            btn.classList.remove('on');
+            bgm.pause(); bgm.src = ""; bgm.load();
+        }
+    }
+
+    let data = JSON.parse(localStorage.getItem('thien_de_final_v5')) || null;
+    function save() { localStorage.setItem('thien_de_final_v5', JSON.stringify(data)); }
+    function updateUI() {
+        if(!data) return;
+        document.getElementById('ll-val').innerText = data.ll;
+        document.getElementById('id-display').innerText = "ID: " + data.id;
+        document.getElementById('rank-name').innerText = data.exp >= 100 ? "BẠC" : "ĐỒNG";
+    }
+
+    function doLogin() {
+        const u = document.getElementById('reg-user').value;
+        if(u.length < 2) return;
+        if(!data) data = { username: u, id: Math.floor(100000 + Math.random() * 900000), ll: 500, highScore: 0, exp: 0, history: [], lastGift: 0 };
+        save(); document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('ui-wrapper').style.display = 'flex'; updateUI();
+    }
+    if(data) { document.getElementById('login-screen').style.display = 'none'; document.getElementById('ui-wrapper').style.display = 'flex'; updateUI(); }
+
+    function openShop() { playBGM('shop'); showMsg("THIÊN SHOP", "💖 Đan Hồi Sinh (50 LL)", "var(--n-gold)"); }
+    function openHistory() { playBGM('history'); let h = data.history.slice(-5).reverse().map(x=>`<div>${x.msg}</div>`).join(''); showMsg("LỊCH SỬ", h || "Chưa có ký sử", "var(--n-blue)"); }
+    
+    function claimGift() {
+        const now = Date.now();
+        if (now - (data.lastGift || 0) > 86400000) {
+            const b = 200; data.ll += b; data.lastGift = now;
+            data.history.push({time: new Date().toLocaleTimeString(), msg: "Nhận quà: +" + b + " LL"});
+            save(); updateUI(); playBGM('reward');
+            showMsg("QUÀ TẶNG", `Đã nhận ${b} Linh Lượng!`, "var(--n-gold)");
+        } else showMsg("THÔNG BÁO", "Bạn đã nhận quà hôm nay rồi!", "var(--n-pink)");
+    }
+
+    function showMsg(t, b, c) { 
+        document.getElementById('msg-title').innerText = t; 
+        document.getElementById('msg-title').style.color = c; 
+        document.getElementById('msg-body').innerHTML = b; 
+        document.getElementById('msg-modal').style.display = 'flex'; 
+    }
+    function closeMsg() { 
+        document.getElementById('msg-modal').style.display = 'none'; 
+        if(document.getElementById('gameCanvas').style.display !== 'block') playBGM('home'); 
+    }
+
+    // --- GAME ---
+    const gCan = document.getElementById('gameCanvas'), gCtx = gCan.getContext('2d');
+    let playing = false, p = {x:80, y:0, dy:0, s:35}, plats = [], camX = 0, trail = [];
+
+    function startGame() {
+        if(data.ll < 10) return; data.ll -= 10; updateUI(); save();
+        playBGM('play'); document.getElementById('ui-wrapper').style.display = 'none';
+        gCan.style.display = 'block'; playing = true; camX = 0; p.y = 100; p.dy = 0; trail = [];
+        gCan.width = window.innerWidth; gCan.height = window.innerHeight;
+        plats = [{x:0, y:gCan.height-130, w:gCan.width}];
+        for(let i=0; i<10; i++) plats.push({x: plats[i].x+plats[i].w+150, y: gCan.height-150, w: 250});
+        loop();
+    }
+
+    function loop() {
+        if(!playing) return;
+        gCtx.clearRect(0,0,gCan.width, gCan.height);
+        camX += 7.5; p.dy += 1.3; p.y += p.dy;
+        gCtx.save(); gCtx.translate(-camX, 0);
+        plats.forEach(pl => {
+            gCtx.fillStyle = '#39ff14'; gCtx.fillRect(pl.x, pl.y, pl.w, 35);
+            if(p.dy >= 0 && p.x+camX+p.s > pl.x && p.x+camX < pl.x+pl.w && p.y+p.s >= pl.y && p.y+p.s <= pl.y+35) { p.y = pl.y - p.s; p.dy = 0; }
+        });
+        trail.push({x: p.x+camX, y: p.y, h: (Date.now()/5)%360});
+        if(trail.length > 15) trail.shift();
+        trail.forEach((t,i) => { gCtx.globalAlpha = i/15*0.5; gCtx.fillStyle=`hsl(${t.h},100%,50%)`; gCtx.fillRect(t.x, t.y, p.s, p.s); });
+        gCtx.globalAlpha = 1; gCtx.fillStyle = "white"; gCtx.fillRect(p.x+camX, p.y, p.s, p.s);
+        gCtx.restore();
+        if(p.y > gCan.height) { playing = false; playBGM('lose'); showMsg("KẾT THÚC", "Bại trận!", "var(--n-pink)"); gCan.style.display = 'none'; document.getElementById('ui-wrapper').style.display = 'flex'; }
+        else requestAnimationFrame(loop);
+    }
+    window.onpointerdown = () => { if(playing && p.dy === 0) p.dy = -26; };
+
+    // --- SAO NỀN ---
+    const sCan = document.getElementById('starCanvas'), sCtx = sCan.getContext('2d');
+    let stars = [];
+    function initS() {
+        sCan.width = window.innerWidth; sCan.height = window.innerHeight;
+        const clrs = ['#00f3ff', '#ff00ff', '#39ff14', '#fff200', '#ffffff'];
+        for(let i=0; i<1800; i++) stars.push({ x: Math.random()*sCan.width, y: Math.random()*sCan.height, s: Math.random()*2, v: Math.random()*0.5, c: clrs[i%5] });
+    }
+    function drawS() {
+        sCtx.fillStyle = '#000'; sCtx.fillRect(0,0,sCan.width, sCan.height);
+        stars.forEach(s => { sCtx.fillStyle = s.c; sCtx.fillRect(s.x, s.y, s.s, s.s); s.y += s.v; if(s.y > sCan.height) s.y = -5; });
+        requestAnimationFrame(drawS);
+    }
+    initS(); drawS();
+</script>
+</body>
+</html>
