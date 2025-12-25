@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lăng Tiêu Bảo Điện - Atmingame</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --neon-green: #00ff00; --neon-red: #ff0000; --neon-blue: #00ccff; }
+        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; overflow: hidden; }
+        #security-layer { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .secure-box { border: 2px solid var(--neon-green); padding: 30px; border-radius: 20px; box-shadow: 0 0 20px var(--neon-green); text-align: center; width: 85%; max-width: 400px; background: rgba(0,15,0,0.95); }
+        .secure-box button { width: 100%; padding: 12px; margin: 8px 0; background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); font-weight: bold; cursor: pointer; border-radius: 10px; }
+        .secure-box input { width: 90%; padding: 12px; background: #111; border: 1px solid var(--neon-green); color: #fff; text-align: center; margin-bottom: 15px; border-radius: 10px; }
+        #atmin-content { display: none; width: 100%; max-width: 900px; padding: 20px; overflow-y: auto; }
+        .card { background: #0a0a0a; border: 1px solid #333; border-radius: 15px; padding: 20px; border-left: 5px solid var(--neon-green); }
+        input { width: 100%; padding: 10px; box-sizing: border-box; background: #1a1a1a; border: 1px solid #444; color: #fff; margin-bottom: 15px; border-radius: 5px; }
+        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; background: var(--neon-green); color: #000; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="security-layer">
+    <div id="m1" class="secure-box"><h2>🏯 MÀNG 1</h2><button onclick="nextM(1)">C. TF family</button></div>
+    <div id="m2" class="secure-box hidden"><h2>⏳ MÀNG 2</h2><button onclick="nextM(2)">B. Thế hệ 4</button></div>
+    <div id="m3" class="secure-box hidden"><h2>🎤 MÀNG 3</h2><button onclick="nextM(3)">D. Trần Dịch Hằng</button></div>
+    <div id="m4" class="secure-box hidden"><h2>🔑 XÁC MINH</h2><input type="text" id="final-key" placeholder="Nhập mã bí mật..."><button onclick="checkFinal()">VÀO ĐIỆN</button></div>
+</div>
+
+<div id="atmin-content">
+    <h1 style="text-align:center; color:var(--neon-green)">🏯 LĂNG TIÊU BẢO ĐIỆN</h1>
+    <div class="card">
+        <h3>🎁 PHÁT THIÊN MÃ</h3>
+        <input type="text" id="code-name" placeholder="Tên Code">
+        <input type="number" id="code-value" placeholder="Linh Lượng">
+        <button class="btn-action" onclick="phatLenhCode()">PHÁT LỆNH TOÀN SEVE</button>
+    </div>
+</div>
+
+<script>
+    // --- KẾT NỐI FIREBASE CỦA ĐẠI ĐẾ ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbqk7bAp7FFfB5RR_aHb0T-mBJNnm-Y0s",
+      authDomain: "thegioianhsao-4f306.firebaseapp.com",
+      databaseURL: "https://thegioianhsao-4f306-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "thegioianhsao-4f306",
+      storageBucket: "thegioianhsao-4f306.firebasestorage.app",
+      messagingSenderId: "257846252596",
+      appId: "1:257846252596:web:14a2293cc8132a1807e661",
+      measurementId: "G-B60KPDVVLL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function nextM(n) { document.getElementById('m'+n).classList.add('hidden'); document.getElementById('m'+(n+1)).classList.remove('hidden'); }
+    function checkFinal() { if(document.getElementById('final-key').value === "TG là cyh") { document.getElementById('security-layer').style.display='none'; document.getElementById('atmin-content').style.display='block'; } else alert("Sai!"); }
+
+    function phatLenhCode() {
+        const name = document.getElementById('code-name').value.toUpperCase();
+        const val = parseInt(document.getElementById('code-value').value);
+        if(!name || !val) return alert("Thiếu thông tin!");
+        
+        db.ref("ServerSettings").set({
+            activeCode: name,
+            rewardAmount: val
+        }).then(() => alert("Đã ban lệnh xuống Thiên Giới!"));
+    }
+</script>
+</body>
+</html>
