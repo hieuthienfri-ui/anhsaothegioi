@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lăng Tiêu Bảo Điện - Atmingame</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --neon-green: #00ff00; --neon-red: #ff0000; --neon-blue: #00ccff; --neon-gold: #fff200; }
+        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; }
+        #security-layer { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .secure-box { border: 2px solid var(--neon-green); padding: 30px; border-radius: 20px; box-shadow: 0 0 20px var(--neon-green); text-align: center; width: 85%; max-width: 400px; background: rgba(0,15,0,0.95); }
+        .secure-box button { width: 100%; padding: 12px; margin: 8px 0; background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); font-weight: bold; cursor: pointer; border-radius: 10px; }
+        .secure-box input { width: 90%; padding: 12px; background: #111; border: 1px solid var(--neon-green); color: #fff; text-align: center; margin-bottom: 15px; border-radius: 10px; }
+        #atmin-content { display: none; width: 100%; max-width: 500px; padding: 20px; }
+        .card { background: #0a0a0a; border: 1px solid #333; border-radius: 15px; padding: 20px; margin-bottom: 20px; border-left: 5px solid var(--neon-green); }
+        input { width: 100%; padding: 12px; box-sizing: border-box; background: #1a1a1a; border: 1px solid #444; color: #fff; margin-bottom: 15px; border-radius: 8px; font-size: 16px; }
+        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; background: var(--neon-green); color: #000; font-size: 16px; text-transform: uppercase; margin-bottom: 10px; }
+        .hidden { display: none !important; }
+        h3 { margin-top: 0; color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
+    </style>
+</head>
+<body>
+
+<div id="security-layer">
+    <div id="m1" class="secure-box"><h2>🏯 MÀNG 1</h2><button onclick="nextM(1)">C. TF family</button></div>
+    <div id="m2" class="secure-box hidden"><h2>⏳ MÀNG 2</h2><button onclick="nextM(2)">B. Thế hệ 4</button></div>
+    <div id="m3" class="secure-box hidden"><h2>🎤 MÀNG 3</h2><button onclick="nextM(3)">D. Trần Dịch Hằng</button></div>
+    <div id="m4" class="secure-box hidden"><h2>🔑 XÁC MINH</h2><input type="text" id="final-key" placeholder="Nhập mã bí mật..."><button onclick="checkFinal()">VÀO ĐIỆN</button></div>
+</div>
+
+<div id="atmin-content">
+    <h1 style="text-align:center; color:var(--neon-green); text-shadow: 0 0 20px var(--neon-green);">🏯 LĂNG TIÊU BẢO ĐIỆN</h1>
+    
+    <div class="card">
+        <h3>🎁 THIÊN MÃ LỆNH (Toàn Server)</h3>
+        <input type="text" id="code-name" placeholder="Tên Code (VD: TANTHU)">
+        <input type="number" id="code-value" placeholder="Linh Lượng tặng">
+        <button class="btn-action" onclick="phatLenhCode()">PHÁT LỆNH</button>
+    </div>
+
+    <div class="card" style="border-left-color: var(--neon-blue);">
+        <h3 style="color: var(--neon-blue);">⚡ BAN THƯỞNG TRỰC TIẾP</h3>
+        <p style="font-size: 12px; color: #888;">Nhập ID người chơi hoặc ghi 'ALL'</p>
+        <input type="text" id="target-id" placeholder="ID (6 số) hoặc ALL">
+        <input type="number" id="bonus-amount" placeholder="Số Linh Lượng tặng">
+        <button class="btn-action" style="background: var(--neon-blue);" onclick="banThuong()">THI TRƯỂN PHÉP THUẬT</button>
+    </div>
+
+    <div class="card" style="border-left-color: var(--neon-gold);">
+        <h3 style="color: var(--neon-gold);">🔍 THIÊN NHÃN (Tra ID)</h3>
+        <input type="text" id="check-id" placeholder="Nhập ID cần soi...">
+        <button class="btn-action" style="background: var(--neon-gold);" onclick="checkPlayerID()">TRA CỨU</button>
+        <div id="check-result" style="margin-top: 10px; font-weight: bold; color: var(--neon-gold); text-align: center;"></div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbqk7bAp7FFfB5RR_aHb0T-mBJNnm-Y0s",
+      authDomain: "thegioianhsao-4f306.firebaseapp.com",
+      databaseURL: "https://thegioianhsao-4f306-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "thegioianhsao-4f306",
+      storageBucket: "thegioianhsao-4f306.firebasestorage.app",
+      messagingSenderId: "257846252596",
+      appId: "1:257846252596:web:14a2293cc8132a1807e661",
+      measurementId: "G-B60KPDVVLL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function nextM(n) { document.getElementById('m'+n).classList.add('hidden'); document.getElementById('m'+(n+1)).classList.remove('hidden'); }
+    function checkFinal() { if(document.getElementById('final-key').value === "TG là cyh") { document.getElementById('security-layer').style.display='none'; document.getElementById('atmin-content').style.display='block'; } else alert("Sai!"); }
+
+    // Chức năng 1: Phát Code
+    function phatLenhCode() {
+        const name = document.getElementById('code-name').value.toUpperCase();
+        const val = parseInt(document.getElementById('code-value').value);
+        if(!name || !val) return alert("Thiếu thông tin!");
+        db.ref("ServerSettings").set({ activeCode: name, rewardAmount: val }).then(() => alert("Đã phát mã Code mới!"));
+    }
+
+    // Chức năng 2: Ban thưởng trực tiếp
+    function banThuong() {
+        const id = document.getElementById('target-id').value.trim();
+        const amount = parseInt(document.getElementById('bonus-amount').value);
+        if(!id || !amount) return alert("Thiếu ID hoặc số tiền!");
+        db.ref("AdminCommands/Bonus").set({ target: id, value: amount, timestamp: Date.now() })
+          .then(() => alert("Lệnh ban thưởng thành công!"));
+    }
+
+    // Chức năng 3: Kiểm tra ID
+    function checkPlayerID() {
+        const id = document.getElementById('check-id').value.trim();
+        if(!id) return;
+        const res = document.getElementById('check-result');
+        res.innerText = "Đang soi...";
+        db.ref("Players/" + id).once("value", (snap) => {
+            const d = snap.val();
+            if(d) res.innerText = `[${d.username}] đang có: ${d.ll} LL`;
+            else res.innerText = "Không thấy người này trong Thiên Giới!";
+        });
+    }
+</script>
+</body>
+</html>
