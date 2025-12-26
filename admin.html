@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lăng Tiêu Bảo Điện - Atmingame</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { --neon-green: #00ff00; --neon-red: #ff0000; --neon-blue: #00ccff; --neon-gold: #fff200; }
+        body { background: #000; color: white; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
+        
+        /* Giao diện bảo mật */
+        #security-layer { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .secure-box { border: 2px solid var(--neon-green); padding: 25px; border-radius: 20px; box-shadow: 0 0 20px var(--neon-green); text-align: center; width: 85%; max-width: 380px; background: rgba(0,15,0,0.95); }
+        .secure-box h2 { color: var(--neon-green); margin-top: 0; font-size: 22px; }
+        .secure-box p { font-size: 15px; margin-bottom: 20px; color: #ccc; }
+        .secure-box button { width: 100%; padding: 14px; margin: 8px 0; background: transparent; border: 1px solid var(--neon-green); color: var(--neon-green); font-weight: bold; cursor: pointer; border-radius: 10px; transition: 0.3s; text-align: left; padding-left: 20px; }
+        .secure-box button:hover { background: var(--neon-green); color: #000; }
+        .secure-box input { width: 100%; padding: 12px; background: #111; border: 1px solid var(--neon-green); color: #fff; text-align: center; margin-bottom: 15px; border-radius: 10px; box-sizing: border-box; }
+        
+        /* Giao diện Admin */
+        #atmin-content { display: none; width: 100%; max-width: 500px; padding: 20px; animation: fadeIn 1s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .card { background: #0a0a0a; border: 1px solid #333; border-radius: 15px; padding: 20px; margin-bottom: 20px; border-left: 5px solid var(--neon-green); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 12px; box-sizing: border-box; background: #1a1a1a; border: 1px solid #444; color: #fff; margin-bottom: 15px; border-radius: 8px; font-size: 16px; }
+        .btn-action { width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; background: var(--neon-green); color: #000; font-size: 15px; text-transform: uppercase; transition: 0.2s; }
+        .btn-action:active { transform: scale(0.98); }
+        .hidden { display: none !important; }
+        h3 { margin-top: 0; color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); font-size: 18px; }
+        .hint-text { font-size: 12px; color: #ff3131; margin-bottom: 10px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div id="security-layer">
+    <div id="m1" class="secure-box">
+        <h2>🏯 MÀNG 1</h2>
+        <p>Đề: Chọn công ty của Idol Atmingame?</p>
+        <button onclick="wrong()">A. Moon Idol</button>
+        <button onclick="wrong()">B. Star Idol</button>
+        <button onclick="nextM(1)">C. TF family</button>
+        <button onclick="wrong()">D. Dream Idol</button>
+    </div>
+
+    <div id="m2" class="secure-box hidden">
+        <h2>⏳ MÀNG 2</h2>
+        <p>Đề: Thế hệ của Idol Atmingame đang ở thế hệ nào?</p>
+        <button onclick="wrong()">A. Thế hệ 2</button>
+        <button onclick="nextM(2)">B. Thế hệ 4</button>
+        <button onclick="wrong()">C. Thế hệ 1</button>
+        <button onclick="wrong()">D. Thế hệ 3</button>
+    </div>
+
+    <div id="m3" class="secure-box hidden">
+        <h2>🎤 MÀNG 3</h2>
+        <p>Đề: Tên Idol Atmingame là ai?</p>
+        <button onclick="wrong()">A. Trần Tuấn Minh</button>
+        <button onclick="wrong()">B. Dương Quế Nguyên</button>
+        <button onclick="wrong()">C. Dương Hàm Bác</button>
+        <button onclick="nextM(3)">D. Trần Dịch Hằng</button>
+    </div>
+
+    <div id="m4" class="secure-box hidden">
+        <h2>🔑 XÁC MINH</h2>
+        <p>Hãy nhập Mật khẩu Atmingame</p>
+        <p class="hint-text">Chữ không cách không có dấu không viết hoa không ghi từ không có ý nghĩa</p>
+        <input type="text" id="final-key" placeholder="Nhập mã bí mật...">
+        <button onclick="checkFinal()" style="text-align:center; padding-left:0; background:var(--neon-green); color:#000;">VÀO ĐIỆN</button>
+    </div>
+</div>
+
+<div id="atmin-content">
+    <h1 style="text-align:center; color:var(--neon-green); text-shadow: 0 0 20px var(--neon-green); margin-bottom:10px;">🏯 LĂNG TIÊU BẢO ĐIỆN</h1>
+    <p style="text-align:center; font-size:12px; color:#888; margin-bottom:20px;">Quyền năng tối thượng của Atmingame</p>
+    
+    <div class="card">
+        <h3>🎁 THIÊN MÃ LỆNH (Code)</h3>
+        <input type="text" id="code-name" placeholder="Tên Code (VD: GIANGSINH)">
+        <input type="number" id="code-value" placeholder="Linh Lượng tặng">
+        <button class="btn-action" onclick="phatLenhCode()">PHÁT LỆNH TOÀN CÕI</button>
+    </div>
+
+    <div class="card" style="border-left-color: var(--neon-blue);">
+        <h3 style="color: var(--neon-blue);">⚡ BAN THƯỞNG TRỰC TIẾP</h3>
+        <input type="text" id="target-id" placeholder="ID người chơi hoặc ghi ALL">
+        <input type="number" id="bonus-amount" placeholder="Số Linh Lượng tặng">
+        <button class="btn-action" style="background: var(--neon-blue);" onclick="banThuong()">THI TRUYỂN PHÉP THUẬT</button>
+    </div>
+
+    <div class="card" style="border-left-color: var(--neon-gold);">
+        <h3 style="color: var(--neon-gold);">🔍 THIÊN NHÃN (Tra ID)</h3>
+        <input type="text" id="check-id" placeholder="Nhập ID số hoặc Tên thần dân...">
+        <button class="btn-action" style="background: var(--neon-gold);" onclick="checkPlayerID()">SOI XÉT LINH LƯỢNG</button>
+        <div id="check-result" style="margin-top: 15px; font-weight: bold; color: var(--neon-gold); text-align: center; min-height: 20px; line-height: 1.5;"></div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbqk7bAp7FFfB5RR_aHb0T-mBJNnm-Y0s",
+      authDomain: "thegioianhsao-4f306.firebaseapp.com",
+      databaseURL: "https://thegioianhsao-4f306-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "thegioianhsao-4f306",
+      storageBucket: "thegioianhsao-4f306.firebasestorage.app",
+      messagingSenderId: "257846252596",
+      appId: "1:257846252596:web:14a2293cc8132a1807e661",
+      measurementId: "G-B60KPDVVLL"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function nextM(n) { 
+        document.getElementById('m'+n).classList.add('hidden'); 
+        document.getElementById('m'+(n+1)).classList.remove('hidden'); 
+    }
+    
+    function wrong() { alert("Sai rồi! Kẻ xâm nhập hãy lui ra!"); }
+
+    function checkFinal() { 
+        const pass = document.getElementById('final-key').value;
+        if(pass === "TG là cyh") { 
+            document.getElementById('security-layer').style.display='none'; 
+            document.getElementById('atmin-content').style.display='block'; 
+        } else {
+            alert("Mật khẩu sai! Đừng hòng vào Lăng Tiêu Bảo Điện!");
+        }
+    }
+
+    function phatLenhCode() {
+        const name = document.getElementById('code-name').value.toUpperCase().trim();
+        const val = parseInt(document.getElementById('code-value').value);
+        if(!name || !val) return alert("Ngài chưa nhập đủ thông tin mã lệnh!");
+        db.ref("ServerSettings").set({ activeCode: name, rewardAmount: val })
+          .then(() => alert("Đã phát mã [" + name + "] thành công!"));
+    }
+
+    function banThuong() {
+        const id = document.getElementById('target-id').value.trim();
+        const amount = parseInt(document.getElementById('bonus-amount').value);
+        if(!id || !amount) return alert("Ngài hãy chọn đối tượng ban thưởng!");
+        
+        db.ref("AdminCommands/Bonus").set({ 
+            target: id, 
+            value: amount, 
+            timestamp: Date.now() 
+        }).then(() => alert("Phép thuật đã thi triển lên: " + id));
+    }
+
+    // NÂNG CẤP: Soi xét thông minh theo Tên hoặc ID số
+    function checkPlayerID() {
+        const input = document.getElementById('check-id').value.trim();
+        if(!input) return;
+        const res = document.getElementById('check-result');
+        res.innerText = "Đang soi xét toàn cõi...";
+
+        db.ref("Players").once("value", (snap) => {
+            let found = false;
+            snap.forEach((child) => {
+                const d = child.val();
+                // Tìm khớp với Tên đăng nhập HOẶC ID số
+                if(d.username == input || d.uid == input) {
+                    res.innerHTML = `✨ Thần dân: <span style="color:white">${d.username}</span><br>
+                                    🆔 ID Số: <span style="color:var(--neon-blue)">${d.uid}</span><br>
+                                    🦋 Linh Lượng: <span style="color:var(--neon-green)">${d.ll}</span>`;
+                    found = true;
+                }
+            });
+            if(!found) res.innerHTML = "<span style='color:var(--neon-red)'>❌ Không tìm thấy thần dân này!</span>";
+        });
+    }
+</script>
+</body>
+</html>
