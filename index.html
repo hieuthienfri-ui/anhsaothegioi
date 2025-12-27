@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đại Đế Chí Tôn - Thiên Giới</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root { 
+            --n-blue: #00f3ff; --n-green: #39ff14; --n-pink: #ff00ff; --n-gold: #fff200; --n-red: #ff3131; 
+            --n-purple: #bc13fe; --n-sky: #00ccff; --n-light-pink: #ffb6c1;
+            --gold-grad: linear-gradient(45deg, #8a6d3b, #f1d38e, #8a6d3b, #e1b941, #8a6d3b);
+        }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; touch-action: none; transition: filter 1.5s ease; }
+        canvas { position: fixed; inset: 0; display: block; }
+        #starCanvas { z-index: 1; }
+        #gameCanvas { z-index: 5; display: none; }
+        
+        #celestial-msg {
+            position: fixed; bottom: 20%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); padding: 12px 25px; border-radius: 20px;
+            font-size: 15px; z-index: 5000; pointer-events: none; text-align: center;
+            border: 1px solid rgba(255,255,255,0.1); white-space: nowrap;
+            animation: fadeCelestial 4s forwards;
+        }
+        @keyframes fadeCelestial {
+            0% { opacity: 0; transform: translate(-50%, 20px); }
+            15% { opacity: 1; transform: translate(-50%, 0); }
+            85% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        #ui-wrapper { position: absolute; inset: 0; z-index: 10; display: none; flex-direction: column; pointer-events: none; }
+        #ui-wrapper * { pointer-events: auto; }
+        #top-bar { position: absolute; top: 20px; left: 15px; right: 15px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .info-box { background: rgba(0,0,0,0.8); padding: 10px 18px; border-radius: 15px; border: 2px solid var(--n-blue); box-shadow: 0 0 15px var(--n-blue); }
+        .id-text { font-size: 15px; font-weight: 900; margin-top: 5px; text-shadow: 0 0 8px currentColor; }
+        
+        #music-toggle { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; border: 3px solid var(--n-red); color: var(--n-red); background: #000; transition: 0.3s; }
+        #music-toggle.on { border-color: var(--n-green); color: var(--n-green); box-shadow: 0 0 15px var(--n-green); }
+        
+        #menu-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #rank-name { font-size: 60px; font-weight: 900; color: var(--n-pink); text-shadow: 0 0 30px var(--n-pink); margin: 0; }
+        .btn-start { padding: 18px 55px; border-radius: 50px; background: #000; border: 4px solid var(--n-green); color: var(--n-green); font-weight: 900; font-size: 28px; cursor: pointer; margin-top: 30px; box-shadow: 0 0 20px var(--n-green); text-transform: uppercase; }
+        
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 3000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .modal-box { width: 88%; max-width: 380px; background: #050505; border: 2px solid var(--n-blue); border-radius: 25px; padding: 25px; text-align: center; box-shadow: 0 0 40px rgba(0,243,255,0.15); }
+        .modal-title { font-size: 24px; font-weight: 900; margin-bottom: 15px; text-transform: uppercase; }
+        .modal-msg { font-size: 18px; line-height: 1.5; margin-bottom: 20px; color: #eee; }
+
+        .play-mode-card { background: #0a0a0a; border: 1px solid #333; border-radius: 20px; padding: 18px; margin-bottom: 15px; text-align: left; cursor: pointer; transition: 0.3s; }
+        .mode-title { font-size: 19px; font-weight: 900; display: flex; align-items: center; gap: 10px; }
+        .mode-desc { font-size: 13px; color: #aaa; margin-top: 5px; padding-left: 30px; }
+
+        .btn-retry { 
+            width: 100%; padding: 16px; background: var(--gold-grad); background-size: 200% auto;
+            color: #000; border: none; border-radius: 18px; font-weight: 900; font-size: 20px; 
+            margin-top: 20px; cursor: pointer; animation: shine 3s linear infinite; box-shadow: 0 0 20px rgba(255,242,0,0.4);
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+        
+        #bottom-bar { position: absolute; bottom: 30px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px; box-sizing: border-box; }
+        .btn-large { height: 58px; display: flex; align-items: center; justify-content: center; border-radius: 18px; background: rgba(0,0,0,0.7); font-weight: 900; font-size: 14px; cursor: pointer; text-transform: uppercase; }
+        
+        .btn-shop { border: 2.5px solid var(--n-gold); color: var(--n-gold); }
+        .btn-garden { border: 2.5px solid var(--n-green); color: var(--n-green); }
+        .btn-history { border: 2.5px solid var(--n-purple); color: var(--n-purple); }
+        .btn-gift { border: 2.5px solid var(--n-pink); color: var(--n-pink); }
+        .btn-gift.claimed { opacity: 0.5; }
+
+        .shop-item { background: #111; border: 1px solid #222; border-radius: 15px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .buy-btn { background: var(--n-blue); color: #000; border: none; padding: 8px 16px; border-radius: 10px; font-weight: 900; cursor: pointer; }
+
+        #login-screen { position: fixed; inset: 0; z-index: 4000; background: #000; display: flex; align-items: center; justify-content: center; }
+        .login-box { width: 85%; max-width: 340px; padding: 30px; border: 3px solid var(--n-blue); border-radius: 30px; text-align: center; }
+        .login-box input { width: 100%; padding: 14px; margin: 10px 0; background: #111; border: 1px solid #333; color: #fff; border-radius: 12px; outline: none; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h1 style="color:var(--n-blue); letter-spacing:3px">THIÊN GIỚI</h1>
+            <input type="text" id="auth-user" placeholder="Tên tài khoản...">
+            <input type="password" id="auth-pass" placeholder="Mật mã...">
+            <button class="buy-btn" style="width:100%; height:50px; margin-top:15px; font-size:18px" onclick="handleAuth()">TIẾN VÀO</button>
+        </div>
+    </div>
+
+    <div id="msg-modal" class="modal">
+        <div class="modal-box">
+            <div id="msg-title" class="modal-title">THÔNG BÁO</div>
+            <div id="msg-body" class="modal-msg"></div>
+            <button class="btn-large" style="width:100%; border:none; background:var(--n-blue); color:#000" onclick="closeCommonModal('msg-modal')">XÁC NHẬN</button>
+        </div>
+    </div>
+
+    <div id="gate-modal" class="modal">
+        <div class="modal-box" style="border-color: var(--n-green);">
+            <div class="modal-title" style="color: var(--n-green)">THIÊN MÔN MỞ</div>
+            <div class="play-mode-card" style="border-color: var(--n-blue)" onclick="startGame('practice')">
+                <div class="mode-title" style="color: var(--n-blue)">🌿 Luyện Tâm Cảnh</div>
+                <div class="mode-desc">Tĩnh tâm tu luyện, không áp lực tốc độ.</div>
+            </div>
+            <div class="play-mode-card" style="border-color: var(--n-red)" onclick="startGame('battle')">
+                <div class="mode-title" style="color: var(--n-red)">⚔️ Đấu Trường</div>
+                <div class="mode-desc">Thử thách anh hùng, tốc độ tăng dần theo công lực.</div>
+            </div>
+            <button class="btn-large" style="width:100%; border:none; background:#222; color:#fff" onclick="closeCommonModal('gate-modal')">HỦY</button>
+        </div>
+    </div>
+
+    <div id="shop-modal" class="modal">
+        <div class="modal-box" style="border-color: var(--n-gold);">
+            <div class="modal-title" style="color:var(--n-gold)">THIÊN SHOP NEON</div>
+            <div style="max-height: 300px; overflow-y: auto;">
+                <div class="shop-item"><span>ID Xanh Lá</span><button class="buy-btn" onclick="buyColor('#39ff14', 1000)">1000 LL</button></div>
+                <div class="shop-item"><span>ID Vàng Neon</span><button class="buy-btn" onclick="buyColor('#fff200', 1000)">1000 LL</button></div>
+                <div class="shop-item"><span>ID Tím Neon</span><button class="buy-btn" onclick="buyColor('#bc13fe', 1500)">1500 LL</button></div>
+            </div>
+            <button class="btn-large" style="width:100%; margin-top:15px; background:#222; color:#fff" onclick="closeCommonModal('shop-modal')">ĐÓNG</button>
+        </div>
+    </div>
+
+    <div id="garden-modal" class="modal">
+        <div class="modal-box" style="border-color: var(--n-green);">
+            <div class="modal-title" style="color:var(--n-green)">VƯỜN SỚ & MÃ LỆNH</div>
+            <div style="margin-bottom: 20px; border-bottom: 1px dashed #333; padding-bottom: 15px;">
+                <input type="text" id="gift-code-input" style="width:100%; padding:10px; background:#111; border:1px solid var(--n-gold); color:var(--n-gold); border-radius:10px; text-align:center; box-sizing:border-box" placeholder="NHẬP THIÊN MÃ LỆNH...">
+                <button class="buy-btn" style="background:var(--n-gold); width:100%; height:35px; margin-top:8px; font-size:14px" onclick="useGiftCode()">KÍCH HOẠT MÃ</button>
+            </div>
+            <textarea id="so-tau-text" style="width:100%; height:80px; background:#111; border:1px solid var(--n-green); color:#fff; border-radius:15px; padding:12px; margin-bottom:15px; box-sizing:border-box" placeholder="Nhập tâm nguyện..."></textarea>
+            <button class="buy-btn" style="background:var(--n-green); width:100%; height:45px" onclick="guiSoTau()">GỬI SỚ (50 LL)</button>
+            <button class="btn-large" style="width:100%; margin-top:10px; background:#222; color:#fff" onclick="closeCommonModal('garden-modal')">RỜI VƯỜN</button>
+        </div>
+    </div>
+
+    <div id="over-modal" class="modal">
+        <div class="modal-box" style="border-color: var(--n-red);">
+            <div class="modal-title" style="color:var(--n-red); font-size:38px">BẠI TRẬN</div>
+            <p id="over-score" style="font-size:26px; margin:15px 0; color:#fff; font-weight:900"></p>
+            <button class="btn-retry" onclick="startGame(currentMode)">CHƠI LẠI</button>
+            <button class="btn-large" style="width:100%; margin-top:10px; border:2px solid var(--n-pink); color:var(--n-pink)" onclick="backToMenu()">VỀ THIÊN ĐÌNH</button>
+        </div>
+    </div>
+
+    <div id="history-modal" class="modal">
+        <div class="modal-box" style="border-color: var(--n-purple);">
+            <div class="modal-title" style="color:var(--n-purple)">THIÊN KÝ SỰ</div>
+            <div id="history-content" style="text-align:left; font-size:14px; color:#ddd; max-height:250px; overflow-y:auto; padding:10px; background:#111; border-radius:15px"></div>
+            <button class="btn-large" style="width:100%; margin-top:15px; background:#222; color:#fff" onclick="closeCommonModal('history-modal')">ĐÓNG</button>
+        </div>
+    </div>
+
+    <canvas id="starCanvas"></canvas>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui-wrapper">
+        <div id="top-bar">
+            <div class="info-box">
+                <div style="font-weight:900; font-size:24px; color:var(--n-gold)">🦋 <span id="ll-val">0</span></div>
+                <div id="id-display" class="id-text">ID: ------</div>
+            </div>
+            <div id="music-toggle" onclick="toggleMusic()">🔊</div>
+        </div>
+        <div id="menu-center">
+            <h1 id="rank-name">ĐỒNG</h1>
+            <button class="btn-start" onclick="openModal('gate-modal')">XUẤT THẾ</button>
+        </div>
+        <div id="bottom-bar">
+            <div class="btn-large btn-shop" onclick="openAndPlay('shop-modal', 'shop')">SHOP</div>
+            <div class="btn-large btn-garden" onclick="openModal('garden-modal')">VƯỜN SỚ</div>
+            <div class="btn-large btn-history" onclick="showHistory()">LỊCH SỬ</div>
+            <div id="gift-btn" class="btn-large btn-gift" onclick="claimDailyGift()">QUÀ 24H</div>
+        </div>
+    </div>
+
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAbqk7bAp7FFfB5RR_aHb0T-mBJNnm-Y0s",
+      authDomain: "thegioianhsao-4f306.firebaseapp.com",
+      databaseURL: "https://thegioianhsao-4f306-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "thegioianhsao-4f306",
+      storageBucket: "thegioianhsao-4f306.firebasestorage.app",
+      messagingSenderId: "257846252596",
+      appId: "1:257846252596:web:14a2293cc8132a1807e661"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let data = null, musicOn = false, bgm = new Audio();
+    let moodIndex = 50, failCount = 0;
+    const PRAISE = ["Thiên Giới ghi nhận bước tiến của ngươi.", "Ngươi mạnh hơn chính mình lúc trước.", "Một hành trình đẹp đang mở ra.", "Không phải ai cũng đi được đến đây.", "Tâm ngươi vững, bước chân không loạn.", "Ngươi đã làm rất tốt.", "Đường tu hành cần người kiên nhẫn như ngươi.", "Một bước nhỏ, nhưng ý chí lớn.", "Thiên Đình đang dõi theo.", "Ngươi không bỏ cuộc, đó đã là thắng.", "Sự tiến bộ này không hề tầm thường.", "Ngươi đã học được từ sai lầm.", "Hào quang của ngươi đang sáng dần.", "Không nhanh, nhưng rất chắc.", "Thiên Giới thích những người bền chí.", "Ngươi đang đi đúng hướng.", "Hơi thở đã đều, tâm đã tĩnh.", "Con đường này hợp với ngươi.", "Một thành quả xứng đáng.", "Ngươi không hề lạc lối.", "Thiên Đình hài lòng với nỗ lực này.", "Ngươi đã vượt qua chính mình.", "Một bước tiến đáng quý.", "Không cần vội, ngươi đang khá lên.", "Tâm không loạn, tay không run.", "Ngươi đang trưởng thành trong thử thách.", "Thiên Giới nhớ đến tên ngươi.", "Một kết quả đẹp.", "Ngươi đã giữ được bình tĩnh.", "Đây là dấu hiệu của người có đạo."];
+    const PROVOKE = ["Ngươi dừng lại ở đây sao?", "Thiên Giới tin rằng ngươi chưa đến giới hạn.", "Có vẻ thử thách này vẫn chưa đủ.", "Ngươi có thể làm tốt hơn thế.", "Thiên Đình chờ lần tiếp theo của ngươi.", "Chỉ thiếu một chút quyết đoán.", "Ngươi đã rất gần rồi.", "Có lẽ ngươi muốn thử lại?", "Hào quang kia chưa chịu dừng đâu.", "Ngươi không phải người bỏ cuộc sớm.", "Thử thêm lần nữa xem sao.", "Giới hạn này… có thật không?", "Thiên Giới chưa thấy hết khả năng của ngươi.", "Ngươi có chắc đây là tất cả?", "Một lần nữa thôi."];
+
+    const songs = { home: 'Giữa trời đêm đầy sao.mp3', play: 'nhactrochoi.mp3', lose: 'thua895.mp3', shop: 'nhacshop36.mp3', history: 'lichsu5.mp3', gift: 'nhanthuong639.mp3' };
+
+    function playBGM(t) {
+        if(!musicOn) return;
+        bgm.pause(); 
+        bgm.src = songs[t] || songs.home; 
+        bgm.loop = (t === 'home' || t === 'play' || t === 'shop' || t === 'history');
+        bgm.play().catch(()=>{});
+    }
+
+    function toggleMusic() {
+        musicOn = !musicOn;
+        document.getElementById('music-toggle').classList.toggle('on', musicOn);
+        if(musicOn) playBGM('home'); else bgm.pause();
+    }
+
+    function openAndPlay(id, songKey) { openModal(id); playBGM(songKey); }
+    function closeCommonModal(id) { closeModal(id); if(musicOn && !playing) playBGM('home'); }
+
+    function showPopup(title, body, color = 'var(--n-blue)') {
+        document.getElementById('msg-title').innerText = title;
+        document.getElementById('msg-title').style.color = color;
+        document.getElementById('msg-body').innerText = body;
+        openModal('msg-modal');
+    }
+
+    function showCelestialMessage(msg, color = "#f5e9c8") {
+        if (!msg) return;
+        const old = document.getElementById('celestial-msg');
+        if(old) old.remove();
+        const div = document.createElement('div');
+        div.id = 'celestial-msg';
+        div.style.color = color;
+        div.innerText = msg;
+        document.body.appendChild(div);
+    }
+
+    function handleAuth() {
+        const user = document.getElementById('auth-user').value.trim();
+        const pass = document.getElementById('auth-pass').value.trim();
+        if(user.length < 3) return;
+        db.ref("Players/" + user).once("value", (snap) => {
+            if(snap.val()) {
+                if(snap.val().password === pass) { data = snap.val(); loginSuccess(); }
+                else showPopup("LỖI", "Mật mã không đúng!", 'var(--n-red)');
+            } else {
+                data = { username: user, password: pass, uid: Math.floor(100000+Math.random()*899999), ll: 500, lastDaily: 0, idColor: '#ff00ff', history: [], bestScore: 0, usedCodes: {} };
+                db.ref("Players/" + user).set(data);
+                loginSuccess();
+            }
+        });
+    }
+
+    function loginSuccess() {
+        localStorage.setItem('current_user', data.username);
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('ui-wrapper').style.display = 'flex';
+        updateUI();
+    }
+
+    function updateUI() {
+        if(!data) return;
+        document.getElementById('ll-val').innerText = data.ll;
+        const idDisp = document.getElementById('id-display');
+        idDisp.innerText = "ID: " + data.uid;
+        idDisp.style.color = data.idColor || 'var(--n-pink)';
+        const canClaim = Date.now() - (data.lastDaily || 0) >= 24*60*60*1000;
+        document.getElementById('gift-btn').classList.toggle('claimed', !canClaim);
+        document.getElementById('rank-name').innerText = data.ll > 5000 ? "VÀNG" : (data.ll > 2000 ? "BẠC" : "ĐỒNG");
+    }
+
+    function save() { if(data) db.ref("Players/" + data.username).update(data); }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function buyColor(color, price) {
+        if(data.ll >= price) {
+            data.ll -= price; data.idColor = color;
+            addHistory(`Đổi màu ID: -${price} LL`);
+            save(); updateUI();
+            showPopup("THÀNH CÔNG", "Đã đúc lại linh quang ID!", 'var(--n-green)');
+        } else showPopup("THẤT BẠI", "Linh lượng không đủ!", 'var(--n-red)');
+    }
+
+    function claimDailyGift() {
+        const now = Date.now(), oneDay = 24*60*60*1000;
+        if (now - (data.lastDaily || 0) >= oneDay) {
+            const amount = Math.floor(Math.random() * 401) + 100;
+            data.ll += amount; data.lastDaily = now;
+            addHistory(`Nhận quà: +${amount} LL`);
+            save(); updateUI();
+            playBGM('gift');
+            showPopup("NHẬN QUÀ", `Đại Đế nhận được ${amount} Linh Lượng!`, 'var(--n-gold)');
+        } else {
+            const hours = Math.ceil((oneDay - (now - data.lastDaily)) / (1000*60*60));
+            showPopup("CHƯA ĐỦ LINH KHÍ", `Vui lòng quay lại sau ${hours} giờ nữa.`, 'var(--n-sky)');
+        }
+    }
+
+    function useGiftCode() {
+        const inputCode = document.getElementById('gift-code-input').value.trim().toUpperCase();
+        if(!inputCode) return;
+        db.ref("ServerSettings").once("value", (snap) => {
+            const s = snap.val();
+            if(s && s.activeCode === inputCode) {
+                if(!data.usedCodes) data.usedCodes = {};
+                if(data.usedCodes[inputCode]) {
+                    showPopup("THẤT BẠI", "Mã này ngài đã dùng rồi!", 'var(--n-red)');
+                } else {
+                    data.ll += s.rewardAmount;
+                    data.usedCodes[inputCode] = true;
+                    addHistory(`Dùng Code: +${s.rewardAmount} LL`);
+                    save(); updateUI();
+                    playBGM('gift');
+                    showPopup("THÀNH CÔNG", `Nhận được ${s.rewardAmount} Linh Lượng!`, 'var(--n-gold)');
+                    document.getElementById('gift-code-input').value = "";
+                }
+            } else showPopup("SAI MÃ", "Mã lệnh không chính xác!", 'var(--n-red)');
+        });
+    }
+
+    function guiSoTau() {
+        const txt = document.getElementById('so-tau-text').value.trim();
+        if(!txt) return;
+        if(data.ll >= 50) {
+            data.ll -= 50;
+            db.ref("SoTau").push({ uid: data.uid, content: txt, time: Date.now() });
+            addHistory(`Gửi sớ: -50 LL`);
+            moodIndex = Math.max(0, moodIndex - 10);
+            save(); updateUI();
+            document.getElementById('so-tau-text').value = "";
+            showPopup("THÀNH CÔNG", "Sớ tâu đã được gửi lên Thiên Đình!", 'var(--n-green)');
+        } else showPopup("THẤT BẠI", "Thiếu Linh Lượng!", 'var(--n-red)');
+    }
+
+    function addHistory(msg) {
+        if(!data.history) data.history = [];
+        data.history.push(`[${new Date().toLocaleDateString()}] ${msg}`);
+        if(data.history.length > 20) data.history.shift();
+    }
+
+    function showHistory() {
+        const content = document.getElementById('history-content');
+        content.innerHTML = (data.history || []).slice().reverse().map(h => `<div style="margin-bottom:8px; border-bottom:1px solid #222; padding-bottom:4px">${h}</div>`).join('') || "Chưa có ký sự.";
+        openAndPlay('history-modal', 'history');
+    }
+
+    const gCan = document.getElementById('gameCanvas'), gCtx = gCan.getContext('2d');
+    let playing = false, p = {x:80, y:0, dy:0, s:35}, plats = [], camX = 0, score = 0, currentMode = 'battle', trail = [];
+
+    function startGame(m) {
+        currentMode = m;
+        document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
+        document.getElementById('ui-wrapper').style.display = 'none';
+        gCan.style.display = 'block';
+        playing = true; camX = 0; p.y = 100; p.dy = 0; score = 0; trail = [];
+        gCan.width = window.innerWidth; gCan.height = window.innerHeight;
+        plats = [{x:0, y:gCan.height-130, w:gCan.width}];
+        for(let i=0; i<500; i++) plats.push({x: i*450+450, y: gCan.height-(150+Math.random()*180), w: 220});
+        playBGM('play');
+        loop();
+    }
+
+    function backToMenu() {
+        closeModal('over-modal');
+        gCan.style.display = 'none';
+        document.getElementById('ui-wrapper').style.display = 'flex';
+        playBGM('home');
+    }
+
+    function loop() {
+        if(!playing) return;
+        gCtx.clearRect(0,0,gCan.width, gCan.height);
+        let speed = currentMode === 'practice' ? 6.5 : 8.5 + (score * 0.05);
+        camX += speed; p.dy += 1.4; p.y += p.dy;
+        if(musicOn && moodIndex < 30) { bgm.volume = 0.2; document.body.style.filter = "brightness(0.8)"; } 
+        else { bgm.volume = 0.5; document.body.style.filter = "none"; }
+        gCtx.save(); gCtx.translate(-camX, 0);
+        plats.forEach(pl => {
+            gCtx.fillStyle = '#39ff14'; gCtx.fillRect(pl.x, pl.y, pl.w, 35);
+            if(p.dy >= 0 && p.x+camX+p.s > pl.x && p.x+camX < pl.x+pl.w && p.y+p.s >= pl.y && p.y+p.s <= pl.y+35) {
+                p.y = pl.y - p.s; p.dy = 0;
+                if(!pl.passed) { pl.passed = true; score++; }
+            }
+        });
+        trail.push({x: p.x+camX, y: p.y, h: (Date.now()/5)%360});
+        if(trail.length > 15) trail.shift();
+        trail.forEach((t,i) => {
+            gCtx.globalAlpha = i/15*0.5; gCtx.fillStyle = `hsl(${t.h},100%,50%)`;
+            gCtx.fillRect(t.x, t.y, p.s, p.s);
+        });
+        gCtx.globalAlpha = 1; gCtx.fillStyle = "#fff"; gCtx.fillRect(p.x+camX, p.y, p.s, p.s);
+        gCtx.restore();
+        gCtx.fillStyle = "#fff200"; gCtx.font = "900 45px 'Segoe UI'";
+        gCtx.fillText("SCORE: " + score, 25, 60);
+        if(p.y > gCan.height) {
+            playing = false; failCount++; moodIndex = Math.max(0, moodIndex - 5);
+            let msg = ""; let color = "#f5e9c8";
+            if (score >= (data.bestScore || 0) * 0.9 && failCount < 3) { msg = PROVOKE[Math.floor(Math.random()*PROVOKE.length)]; color = "#fff200"; } 
+            else if (failCount < 3) { msg = PRAISE[Math.floor(Math.random()*PRAISE.length)]; color = "#39ff14"; }
+            if(failCount >= 5) failCount = 0;
+            if(msg && Math.random() < 0.7) showCelestialMessage(msg, color);
+            if(score > (data.bestScore || 0)) { data.bestScore = score; save(); }
+            playBGM('lose');
+            document.getElementById('over-score').innerText = "CÔNG LỰC: " + score;
+            openModal('over-modal');
+        } else requestAnimationFrame(loop);
+    }
+
+    window.onpointerdown = () => { if(playing && p.dy === 0) p.dy = -28; };
+
+    const sCan = document.getElementById('starCanvas'), sCtx = sCan.getContext('2d');
+    let stars = [];
+    function initS() {
+        sCan.width = window.innerWidth; sCan.height = window.innerHeight;
+        stars = Array.from({length: 1200}, () => ({
+            x: Math.random()*sCan.width, y: Math.random()*sCan.height,
+            s: Math.random()*2, v: Math.random()*0.5,
+            c: ['#00f3ff','#ff00ff','#39ff14','#fff200','#fff'][Math.floor(Math.random()*5)]
+        }));
+    }
+    function drawS() {
+        sCtx.fillStyle = '#000'; sCtx.fillRect(0,0,sCan.width, sCan.height);
+        stars.forEach(s => {
+            sCtx.fillStyle = s.c; sCtx.fillRect(s.x, s.y, s.s, s.s);
+            s.y += s.v; if(s.y > sCan.height) s.y = -5;
+        });
+        requestAnimationFrame(drawS);
+    }
+    initS(); drawS();
+
+    const saved = localStorage.getItem('current_user');
+    if(saved) db.ref("Players/" + saved).once("value", s => { if(s.val()){ data = s.val(); loginSuccess(); }});
+
+    db.ref("AdminCommands/Bonus").on("value", (snap) => {
+        const cmd = snap.val();
+        if (!cmd || !data) return;
+        if (cmd.target === "ALL" || cmd.target == data.uid || cmd.target == data.username) {
+            const lastBonus = localStorage.getItem('last_bonus_time') || 0;
+            if (cmd.timestamp > lastBonus) {
+                data.ll += cmd.value;
+                addHistory(`✨ Đại Đế ban thưởng: +${cmd.value} LL`);
+                save(); updateUI();
+                localStorage.setItem('last_bonus_time', cmd.timestamp);
+                showPopup("THIÊN THƯỞNG", `Bạn vừa nhận được ${cmd.value} Linh Lượng từ Admin!`, 'var(--n-gold)');
+                if(musicOn) playBGM('gift');
+            }
+        }
+    });
+</script>
+</body>
+</html>
